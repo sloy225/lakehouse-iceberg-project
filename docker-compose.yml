@@ -69,5 +69,19 @@ services:
       - ./trino-config:/etc/catalogs
       - ./trino/catalog/lakehouse.properties:/etc/trino/catalog/lakehouse.properties
 
+  metabase:
+    image: metabase/metabase:latest
+    container_name: lakehouse-bi
+    restart: unless-stopped
+    depends_on:
+      - trino
+    ports:
+      - "3000:3000"
+    volumes:
+      - metabase_data:/metabase-data
+    environment:
+      MB_DB_FILE: /metabase-data/metabase.db
+
 volumes:
   minio_data:
+  metabase_data:

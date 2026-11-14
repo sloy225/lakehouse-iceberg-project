@@ -1,0 +1,10 @@
+# Fichiers sensibles (identifiants S3 / MinIO)
+.env
+
+# Fichiers temporaires Jupyter et Python
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+derby.log
+metastore_db/
+spark-warehouse/

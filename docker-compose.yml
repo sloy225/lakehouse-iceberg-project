@@ -1,0 +1,40 @@
+services:
+  minio:
+    image: docker.io/pgsty/silo:RELEASE.2026-11-12T00-00-00Z
+    container_name: lakehouse-minio
+    restart: unless-stopped
+    command:
+      - server
+      - /data
+      - --console-address
+      - ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  spark-iceberg:
+    image: quay.io/jupyter/pyspark-notebook:spark-3.5.0
+    container_name: lakehouse-spark
+    restart: unless-stopped
+    depends_on:
+      - minio
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: us-east-1
+      JUPYTER_TOKEN: lakehouse
+    ports:
+      - "8888:8888"
+      - "4040:4040"
+    volumes:
+      - ./notebooks:/home/jovyan/work
+      - ./spark-defaults/spark-defaults.conf:/usr/local/spark/conf/spark-defaults.conf
+    command: start-notebook.py --IdentityProvider.token='lakehouse'
+
+volumes:
+  minio_data:

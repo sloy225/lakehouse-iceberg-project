@@ -16,6 +16,22 @@ services:
       - "9001:9001"
     volumes:
       - minio_data:/data
+  iceberg-rest:
+    image: tabulario/iceberg-rest:1.6.0
+    container_name: lakehouse-catalog
+    restart: unless-stopped
+    depends_on:
+      - minio
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: us-east-1
+      CATALOG_WAREHOUSE: s3a://lakehouse-warehouse/warehouse
+      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+      CATALOG_S3_ENDPOINT: http://minio:9000
+      CATALOG_S3_PATH__STYLE__ACCESS: "true"
+    ports:
+      - "8181:8181"
 
   spark-iceberg:
     image: quay.io/jupyter/pyspark-notebook:spark-3.5.0
@@ -35,6 +51,23 @@ services:
       - ./notebooks:/home/jovyan/work
       - ./spark-defaults/spark-defaults.conf:/usr/local/spark/conf/spark-defaults.conf
     command: start-notebook.py --IdentityProvider.token='lakehouse'
+  
+  trino:
+    image: trinodb/trino:464
+    container_name: lakehouse-trino
+    restart: unless-stopped
+    depends_on:
+      - minio
+      - iceberg-rest
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY} 
+      AWS_REGION: us-east-1
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./trino-config:/etc/catalogs
+      - ./trino/catalog/lakehouse.properties:/etc/trino/catalog/lakehouse.properties
 
 volumes:
   minio_data:
